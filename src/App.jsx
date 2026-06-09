@@ -276,6 +276,7 @@ function ZonaCard({ zona, onInvertir }) {
   const leal = Math.round(zona.lealtad);
   const color = leal >= 55 ? C.teal : leal >= 40 ? C.amber : C.red;
   const statusLabel = leal >= 55 ? "Zona segura" : leal >= 40 ? "En disputa" : "Zona hostil";
+  const esCaba = zona.id === "caba";
   return (
     <div style={{
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14,
@@ -289,17 +290,27 @@ function ZonaCard({ zona, onInvertir }) {
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{zona.nombre}</div>
         <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>
-          {zona.intendente} · {zona.partido === "propio" ? "Aliado" : "Opositor"}
+          {esCaba ? "Jurisdicción externa · Gobierno autónomo" : `${zona.intendente} · ${zona.partido === "propio" ? "Aliado" : "Opositor"}`}
         </div>
-        <div style={{ fontSize: 11, color:"#9b5de5", marginTop:2 }}>⭐ {zona.preferLabel}</div>
+        <div style={{ fontSize: 11, color:"#9b5de5", marginTop:2 }}>
+          {esCaba ? "🤝 Coord.: seguridad, transporte" : `⭐ ${zona.preferLabel}`}
+        </div>
         <div style={{ fontSize: 11, color, fontWeight: 600, marginTop: 2 }}>{statusLabel}</div>
       </div>
       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
         <span style={{ fontSize: 18, fontWeight: 800, color }}>{leal}%</span>
-        <button onClick={onInvertir} style={{
-          background: C.tealLight, color: C.tealDark, border: `1px solid ${C.teal}40`,
-          borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600,
-        }}>-8 cap → +7 leal</button>
+        {!esCaba && (
+          <button onClick={onInvertir} style={{
+            background: C.tealLight, color: C.tealDark, border: `1px solid ${C.teal}40`,
+            borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600,
+          }}>-8 cap → +7 leal</button>
+        )}
+        {esCaba && (
+          <button onClick={onInvertir} style={{
+            background: C.blueLight, color: C.blue, border: `1px solid ${C.blue}40`,
+            borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600,
+          }}>🤝 Coordinar</button>
+        )}
       </div>
     </div>
   );
@@ -416,13 +427,13 @@ export default function Gobernador() {
     patch(s => {
       const { mes, anio } = mesAnio(s.turno);
 
-      // Mes 45 (Sep, Año 4): lanzar campaña presidencial
-      if (s.turno === 45) {
+      // Mes 33 (Sep, Año 3): campaña presidencial
+      if (s.turno === 33) {
         return {...s, campania:true, eventoResuelto:true,
           log:[`${mes}, Año ${anio}: Es momento de lanzar tu candidato presidencial.`,...s.log].slice(0,30)};
       }
-      // Mes 48 (Dic, Año 4): elecciones provinciales — fin del primer mandato
-      if (s.turno === 48) {
+      // Mes 36 (Dic, Año 3): elecciones — resultado de la campaña
+      if (s.turno === 36) {
         const voto = calcVoto(s.zonas, s.r.cohesion, s.r.imagen, s.conf);
         if (voto < 55) return {...s, juegoTerminado:true, victoria:false,
           mensajeFinal:`Perdiste la reelección con ${voto}%. Necesitabas el 55%.`};
@@ -634,18 +645,11 @@ export default function Gobernador() {
         <div style={{ textAlign:"right" }}>
           <div style={{
             background: esOpositor ? "rgba(229,57,53,0.25)" : "rgba(255,255,255,0.2)",
-            borderRadius:20, padding:"4px 12px", fontSize:11, marginBottom:6,
+            borderRadius:20, padding:"4px 12px", fontSize:11,
             border: esOpositor ? "1px solid rgba(229,57,53,0.5)" : "1px solid rgba(255,255,255,0.4)",
           }}>
             {esOpositor ? "🏛️ Pdte. Opositor" : "🤝 Pdte. Propio"}
           </div>
-          <div style={{
-            fontSize:20, fontWeight:900,
-            color: votoActual>=55 ? "#a5d6a7" : votoActual>=45 ? "#fff59d" : "#ef9a9a",
-          }}>
-            🗳️ {votoActual}%
-          </div>
-          <div style={{ fontSize:10, opacity:0.6, marginTop:2 }}>intención de voto</div>
         </div>
       </div>
 
@@ -682,23 +686,6 @@ export default function Gobernador() {
             <ConfBar valor={conf}/>
           </div>
 
-          {/* Candidato info */}
-          {anioJ<=4 && !presidentePropio && (
-            <div style={{
-              background: fzCand>=52 ? C.tealLight : C.amberLight,
-              border: `1px solid ${fzCand>=52 ? C.teal : C.amber}40`,
-              borderRadius:14, padding:"12px 16px", marginBottom:12, boxShadow:C.shadow,
-            }}>
-              <div style={{ fontSize:11, color:C.textMuted, fontWeight:700, letterSpacing:1.5,
-                textTransform:"uppercase", marginBottom:8 }}>Candidato Presidencial</div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:13, color:C.textSub }}>Fuerza estimada</span>
-                <span style={{ fontSize:16, fontWeight:800, color: fzCand>=52?C.teal:C.amber }}>
-                  {fzCand}/100 {fzCand>=52?"✅":"⚠️"}
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Evento pendiente banner */}
           {tieneEventoPendiente && (
@@ -927,6 +914,8 @@ export default function Gobernador() {
           const area = AREAS.find(a=>a.id===data.demanda.area);
           const zonaData = ZONAS.find(z=>z.id===data.zona.id);
           const esPreferida = zonaData?.prefers?.includes(data.demanda.area);
+          // data.zona viene de la constante ZONAS (sin lealtad), buscamos en el estado
+          const lealtadActual = Math.round(zonas.find(z=>z.id===data.zona.id)?.lealtad ?? data.zona.base);
           return (
             <Modal titulo={data.zona.intendente} icono="👥" color={C.blue}>
               <p style={{fontSize:14,color:C.textSub,marginBottom:6}}>{data.zona.nombre}</p>
@@ -944,7 +933,7 @@ export default function Gobernador() {
                 display:"flex", justifyContent:"space-between", fontSize:13,
               }}>
                 <span style={{color:C.textSub}}>Lealtad de zona</span>
-                <strong style={{color:data.zona.lealtad>=55?C.teal:C.red}}>{Math.round(data.zona.lealtad)}%</strong>
+                <strong style={{color:lealtadActual>=55?C.teal:C.red}}>{lealtadActual}%</strong>
               </div>
               <ActionBtn
                 onClick={()=>resolverIntendente(true)}
