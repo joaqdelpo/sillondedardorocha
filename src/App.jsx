@@ -429,7 +429,7 @@ export default function Gobernador() {
 
       // Mes 33 (Sep, Año 3): campaña presidencial
       if (s.turno === 33) {
-        return {...s, campania:true, eventoResuelto:true,
+        return {...s, campania:true, eventoResuelto:true, evento:{tipo:"tranquilo",data:null},
           log:[`${mes}, Año ${anio}: Es momento de lanzar tu candidato presidencial.`,...s.log].slice(0,30)};
       }
       // Mes 36 (Dic, Año 3): elecciones — resultado de la campaña
@@ -437,7 +437,7 @@ export default function Gobernador() {
         const voto = calcVoto(s.zonas, s.r.cohesion, s.r.imagen, s.conf);
         if (voto < 55) return {...s, juegoTerminado:true, victoria:false,
           mensajeFinal:`Perdiste la reelección con ${voto}%. Necesitabas el 55%.`};
-        return {...s, eventoResuelto:true,
+        return {...s, eventoResuelto:true, evento:{tipo:"tranquilo",data:null},
           log:[`${mes}, Año ${anio}: ¡Reelecto con ${voto}%! Segundo mandato.`,...s.log].slice(0,30)};
       }
       if (s.turno === 97) {
@@ -586,7 +586,7 @@ export default function Gobernador() {
       const gana = fuerza >= 52;
       let ns = applyR(s, {capital:-15}, null, 0, 0);
       return {...ns, campania:false, presidentePropio:gana, fuerzaCandidato:fuerza,
-        eventoResuelto:true,
+        eventoResuelto:true, evento:{tipo:"tranquilo",data:null},
         log:[gana
           ? `🏆 Tu candidato ganó la presidencia (fuerza ${fuerza}/100). Tenés presidente propio.`
           : `💀 Tu candidato perdió (fuerza ${fuerza}/100). Seguís con presidente opositor.`
