@@ -15,14 +15,14 @@ const AREAS = [
 ];
 
 const ZONAS = [
-  { id:"c_norte",   nombre:"Conurbano Norte",   base:58, intendente:"Jorge Medina",    partido:"propio"   },
-  { id:"c_sur",     nombre:"Conurbano Sur",     base:54, intendente:"Patricia Vega",   partido:"propio"   },
-  { id:"c_oeste",   nombre:"Conurbano Oeste",   base:50, intendente:"Raúl Domínguez",  partido:"propio"   },
-  { id:"campo",     nombre:"Interior Campo",    base:33, intendente:"Carlos Ibáñez",   partido:"opositor" },
-  { id:"costa",     nombre:"Interior Costa",    base:44, intendente:"Mónica Ferreyra", partido:"opositor" },
-  { id:"sierras",   nombre:"Interior Sierras",  base:40, intendente:"Diego Ponce",     partido:"propio"   },
-  { id:"industria", nombre:"Interior Industria",base:51, intendente:"Laura Sosa",      partido:"propio"   },
-  { id:"caba",      nombre:"CABA",              base:28, intendente:"(Jefe de Gob.)",  partido:"opositor" },
+  { id:"c_norte",   nombre:"Conurbano Norte",   base:58, intendente:"Jorge Medina",    partido:"propio",   prefers:["vial","seguridad"],       preferLabel:"rutas y seguridad"   },
+  { id:"c_sur",     nombre:"Conurbano Sur",     base:54, intendente:"Patricia Vega",   partido:"propio",   prefers:["educacion","vivienda"],   preferLabel:"educación y vivienda" },
+  { id:"c_oeste",   nombre:"Conurbano Oeste",   base:50, intendente:"Raúl Domínguez",  partido:"propio",   prefers:["vial","transporte"],      preferLabel:"vial y transporte"   },
+  { id:"campo",     nombre:"Interior Campo",    base:33, intendente:"Carlos Ibáñez",   partido:"opositor", prefers:["vial","salud"],           preferLabel:"rutas y salud"       },
+  { id:"costa",     nombre:"Interior Costa",    base:44, intendente:"Mónica Ferreyra", partido:"opositor", prefers:["transporte","turismo"],   preferLabel:"transporte"          },
+  { id:"sierras",   nombre:"Interior Sierras",  base:40, intendente:"Diego Ponce",     partido:"propio",   prefers:["educacion","salud"],      preferLabel:"educación y salud"   },
+  { id:"industria", nombre:"Interior Industria",base:51, intendente:"Laura Sosa",      partido:"propio",   prefers:["vial","seguridad"],       preferLabel:"vial e industria"    },
+  { id:"caba",      nombre:"CABA",              base:28, intendente:"(Jefe de Gob.)",  partido:"opositor", prefers:["transporte","educacion"], preferLabel:"transporte y ed."    },
 ];
 
 const EMPRESAS = [
@@ -291,6 +291,7 @@ function ZonaCard({ zona, onInvertir }) {
         <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>
           {zona.intendente} · {zona.partido === "propio" ? "Aliado" : "Opositor"}
         </div>
+        <div style={{ fontSize: 11, color:"#9b5de5", marginTop:2 }}>⭐ {zona.preferLabel}</div>
         <div style={{ fontSize: 11, color, fontWeight: 600, marginTop: 2 }}>{statusLabel}</div>
       </div>
       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
@@ -415,15 +416,18 @@ export default function Gobernador() {
     patch(s => {
       const { mes, anio } = mesAnio(s.turno);
 
-      if (s.turno === 47) {
-        return {...s, campania:true,
+      // Mes 45 (Sep, Año 4): lanzar campaña presidencial
+      if (s.turno === 45) {
+        return {...s, campania:true, eventoResuelto:true,
           log:[`${mes}, Año ${anio}: Es momento de lanzar tu candidato presidencial.`,...s.log].slice(0,30)};
       }
-      if (s.turno === 49) {
+      // Mes 48 (Dic, Año 4): elecciones provinciales — fin del primer mandato
+      if (s.turno === 48) {
         const voto = calcVoto(s.zonas, s.r.cohesion, s.r.imagen, s.conf);
         if (voto < 55) return {...s, juegoTerminado:true, victoria:false,
           mensajeFinal:`Perdiste la reelección con ${voto}%. Necesitabas el 55%.`};
-        return {...s, log:[`${mes}, Año ${anio}: Reelecto con ${voto}%. Segundo mandato.`,...s.log].slice(0,30)};
+        return {...s, eventoResuelto:true,
+          log:[`${mes}, Año ${anio}: ¡Reelecto con ${voto}%! Segundo mandato.`,...s.log].slice(0,30)};
       }
       if (s.turno === 97) {
         const voto = calcVoto(s.zonas, s.r.cohesion, s.r.imagen, s.conf);
@@ -501,15 +505,21 @@ export default function Gobernador() {
     patch(s => {
       const { zona, demanda } = s.evento.data;
       const area = AREAS.find(a=>a.id===demanda.area);
+      const zonaData = ZONAS.find(z=>z.id===zona.id);
+      const esPreferida = zonaData?.prefers?.includes(demanda.area);
       if (aceptar) {
+        const bonusLealtad = esPreferida ? 14 : 8;
         const efecto = { presupuesto: -(area.costo), imagen: Math.round(area.img_op*0.5+area.img_pr*0.5) };
-        let ns = applyR(s, efecto, zona.id, +8, 0);
+        let ns = applyR(s, efecto, zona.id, bonusLealtad, 0);
+        const extra = esPreferida ? " ⭐ ¡Era lo que necesitaban! Bonus de lealtad." : "";
         return {...ns, eventoResuelto:true,
-          log:[`Invertiste en ${area.nombre} para ${zona.intendente}. Lealtad de zona sube.`,...ns.log].slice(0,30)};
+          log:[`Invertiste en ${area.nombre} para ${zona.intendente}.${extra}`,...ns.log].slice(0,30)};
       } else {
-        let ns = applyR(s, {cohesion:-6, capital:-3}, zona.id, -6, 0);
+        const malus = esPreferida ? -10 : -6;
+        let ns = applyR(s, {cohesion:-6, capital:-3}, zona.id, malus, 0);
+        const extra = esPreferida ? " Era su prioridad — la zona queda muy resentida." : "";
         return {...ns, eventoResuelto:true,
-          log:[`Rechazaste la demanda de ${zona.intendente}.`,...ns.log].slice(0,30)};
+          log:[`Rechazaste la demanda de ${zona.intendente}.${extra}`,...ns.log].slice(0,30)};
       }
     });
   };
@@ -565,10 +575,19 @@ export default function Gobernador() {
       const gana = fuerza >= 52;
       let ns = applyR(s, {capital:-15}, null, 0, 0);
       return {...ns, campania:false, presidentePropio:gana, fuerzaCandidato:fuerza,
+        eventoResuelto:true,
         log:[gana
-          ? `Tu candidato ganó la presidencia (fuerza ${fuerza}/100). Tenés presidente propio.`
-          : `Tu candidato perdió (fuerza ${fuerza}/100). Seguís con presidente opositor.`
+          ? `🏆 Tu candidato ganó la presidencia (fuerza ${fuerza}/100). Tenés presidente propio.`
+          : `💀 Tu candidato perdió (fuerza ${fuerza}/100). Seguís con presidente opositor.`
         ,...ns.log].slice(0,30)};
+    });
+  };
+
+  const reunionDeBloque = () => {
+    patch(s => {
+      if (s.r.capital < 12) return s;
+      let ns = applyR(s, {capital:-12, cohesion:+14}, null, 0, 0);
+      return {...ns, log:["🤝 Reunión de bloque. Cohesión sube, usaste capital político.",...ns.log].slice(0,30)};
     });
   };
 
@@ -715,6 +734,13 @@ export default function Gobernador() {
                     label={inversionHecha ? "✅ Inversión realizada" : "💰 Gestionar presupuesto"}
                     color={inversionHecha ? C.teal : C.blue}
                     outline={inversionHecha}
+                  />
+                  <ActionBtn
+                    onClick={reunionDeBloque}
+                    label={`🤝 Reunión de bloque (-12 capital, +14 cohesión)`}
+                    color={C.purple}
+                    outline
+                    disabled={r.capital < 12}
                   />
                   {/* Solo muestra "Cerrar mes" cuando el evento está resuelto */}
                   {puedeAvanzar && (
@@ -899,12 +925,20 @@ export default function Gobernador() {
 
         if (tipo==="intendente") {
           const area = AREAS.find(a=>a.id===data.demanda.area);
+          const zonaData = ZONAS.find(z=>z.id===data.zona.id);
+          const esPreferida = zonaData?.prefers?.includes(data.demanda.area);
           return (
             <Modal titulo={data.zona.intendente} icono="👥" color={C.blue}>
               <p style={{fontSize:14,color:C.textSub,marginBottom:6}}>{data.zona.nombre}</p>
               <p style={{fontSize:15,color:C.text,fontWeight:600,marginBottom:12,lineHeight:1.5,textTransform:"capitalize"}}>
                 {data.demanda.txt}
               </p>
+              {esPreferida && (
+                <div style={{background:"#f3e5f5",borderRadius:10,padding:10,marginBottom:12,
+                  fontSize:12,color:"#6a1b9a",fontWeight:600}}>
+                  ⭐ Esta es la prioridad histórica de la zona. Aceptar da +14 lealtad (vs +8 normal).
+                </div>
+              )}
               <div style={{
                 background:C.bg, borderRadius:10, padding:12, marginBottom:14,
                 display:"flex", justifyContent:"space-between", fontSize:13,
@@ -914,10 +948,10 @@ export default function Gobernador() {
               </div>
               <ActionBtn
                 onClick={()=>resolverIntendente(true)}
-                label={`✅ Aceptar — ${area?.icono} ${area?.nombre} (-${area?.costo}% presup)`}
+                label={`✅ Aceptar — ${area?.icono} ${area?.nombre} (-${area?.costo}% presup, +${esPreferida?14:8} lealtad)`}
                 color={C.teal}
               />
-              <ActionBtn onClick={()=>resolverIntendente(false)} label="❌ Rechazar (-6 cohesión, -6 lealtad)" color={C.red} outline/>
+              <ActionBtn onClick={()=>resolverIntendente(false)} label={`❌ Rechazar (-6 cohesión, ${esPreferida?"-10":"-6"} lealtad)`} color={C.red} outline/>
             </Modal>
           );
         }
