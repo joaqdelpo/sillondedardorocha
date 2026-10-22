@@ -1,11 +1,55 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Simulador político bonaerense. Gobernás la Provincia de Buenos Aires." />
+
+    <!-- CSP: bloquea scripts externos no autorizados, eval(), y ataques XSS -->
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self';
+               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+               font-src 'self' https://fonts.gstatic.com;
+               img-src 'self' data:;
+               connect-src 'self';
+               object-src 'none';
+               base-uri 'self';
+               form-action 'none';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="no-referrer" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sillón de Dardo Rocha" />
+    <meta property="og:description" content="Simulador político bonaerense — gobernás la Provincia de Buenos Aires." />
+    <meta property="og:type" content="website" />
+
+    <!-- Tipografía -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
     <link rel="icon" type="image/svg+xml" href="/sillondedardorocha/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gobernador</title>
-    <script type="module" crossorigin src="/sillondedardorocha/assets/index-D_N1G2dW.js"></script>
+    <title>Sillón de Dardo Rocha</title>
+
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+      body {
+        background: #0b0d14;
+        color: #f0ece0;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior: none;
+      }
+      #root { isolation: isolate; }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #2a3045; border-radius: 2px; }
+      * { -webkit-tap-highlight-color: transparent; }
+    </style>
+    <script type="module" crossorigin src="/sillondedardorocha/assets/index-Bn9jfXBf.js"></script>
     <link rel="stylesheet" crossorigin href="/sillondedardorocha/assets/index-nqMpL4T3.css">
   </head>
   <body>
